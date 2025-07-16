@@ -1,3 +1,104 @@
+# BiSND: Binary Classification Social Network Dataset
+
+**BiSND** is a benchmark dataset for graph machine learning, derived from real-world social network (Twitter) data.  
+It contains node features, binary node labels, and three different graph structures (no edges, directed, undirected) to support a wide range of machine learning and network science experiments.
+
+---
+
+## Dataset Variants
+
+This repository includes **three versions** of the BiSND dataset:
+
+- [`no_edges/`](./no_edges/):  
+  All nodes are disconnected (no edges). Useful for feature-only benchmarks and ablation studies.
+
+- [`directed/`](./directed/):  
+  Edges are **directed** (A → B if user A mentions B on Twitter).  
+  Suitable for tasks needing edge directionality and real-world communication flow.
+
+- [`undirected/`](./undirected/):  
+  Edges are **undirected** (A—B if A and B mention each other).  
+  Use for methods assuming undirected graphs, e.g., classic GNNs.
+
+Each folder contains:
+- `edges.csv` — List of graph edges (empty in `no_edges/`)
+- `features.csv` — Node features (19 social/behavioral features)
+- `labels.csv` — Node-level binary classification labels
+- `train_mask.csv`, `val_mask.csv`, `test_mask.csv` — Standard splits for fair evaluation
+
+---
+
+## Node Features
+
+Each node (Twitter user) is described by the following features:
+
+- followers_count
+- friends_count
+- listed_count
+- acc_created_at
+- favourites_count
+- verified
+- Tweets
+- followerPerDay
+- statusPerDay
+- favPerTweet
+- friendsPerDay
+- followFriends
+- friendNlisted
+- prot
+- foPerTweet
+- frPerTweet
+- favPerFollow
+- favPerFriend
+- listPerDay
+
+**Label:**  
+- `label` in `labels.csv`:  
+  - `1` = user still exists  
+  - `0` = user deleted
+
+---
+
+## How to Load in PyTorch Geometric (PyG)
+
+**Example (for `directed/` version):**
+```python
+import pandas as pd
+import torch
+from torch_geometric.data import Data
+
+# Load edges
+edges = pd.read_csv('directed/edges.csv')
+edge_index = torch.tensor(edges.values.T, dtype=torch.long)
+
+# Load features
+features = pd.read_csv('directed/features.csv').sort_values('node_id')
+x = torch.tensor(features.drop('node_id', axis=1).values, dtype=torch.float)
+
+# Load labels
+labels = pd.read_csv('directed/labels.csv').sort_values('node_id')
+y = torch.tensor(labels['label'].values, dtype=torch.long)
+
+# Optional: Load masks
+train_ids = pd.read_csv('directed/train_mask.csv')['node_id'].values
+val_ids = pd.read_csv('directed/val_mask.csv')['node_id'].values
+test_ids = pd.read_csv('directed/test_mask.csv')['node_id'].values
+
+train_mask = torch.zeros(x.size(0), dtype=torch.bool)
+val_mask = torch.zeros(x.size(0), dtype=torch.bool)
+test_mask = torch.zeros(x.size(0), dtype=torch.bool)
+train_mask[train_ids] = True
+val_mask[val_ids] = True
+test_mask[test_ids] = True
+
+# Create PyG Data object
+data = Data(x=x, edge_index=edge_index, y=y,
+            train_mask=train_mask, val_mask=val_mask, test_mask=test_mask)
+print(data)
+
+
+```
+
 # Properties of BiSND
 
 **Benchmark dataset properties and statistics compared to BiSND, where ND: Node Degree, IN: Isolated Nodes, SL= self-Loops, UD=Undirected,  BF: Binary Features.**
@@ -38,4 +139,19 @@
 
 # Article
 The article is online as preprint at https://doi.org/10.48550/arXiv.2503.02397
+
+## How to Cite
+
+If you use BiSND in your research, please cite:
+
+```bibtex
+@misc{Ali2025BiSND,
+      title={A Binary Classification Social Network Dataset for Graph Machine Learning}, 
+      author={Adnan Ali and Jinglong Li},
+      year={2025},
+      eprint={2503.02397},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2503.02397}, 
+}
 
